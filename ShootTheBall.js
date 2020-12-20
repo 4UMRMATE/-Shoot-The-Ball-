@@ -2,9 +2,6 @@ window.onload = function () {
   start();
 };
 
-// TODO gameOver
-// TODO pause
-
 // This program draws a target that follows the mouse
 
 var lineX1;
@@ -31,26 +28,29 @@ var scoreBox;
 var highScoreBox;
 var livesBox;
 var restartBox;
-var pauseBox;
 
 var SCORE = 0;
 var HIGHSCORE = 0;
 var LIVES_LEFT = 5;
 
+var GAME_OVER = false;
 var missedShot = false;
-var paused = false;
 
 function start() {
-  mouseMoveMethod(drawAim);
-
   drawBall();
   setTimer(animateBall, DELAY);
+
+  drawAim();
+  mouseMoveMethod(moveAim);
 
   mouseClickMethod(shotTarget);
 }
 
 function shotTarget(e) {
-  //remove(ball);
+  if (GAME_OVER) {
+    resetGame();
+  }
+
   var obj = getElementAt(e.getX(), e.getY());
   if (obj !== null) {
     if (obj.type == "Circle") {
@@ -70,8 +70,6 @@ function shotTarget(e) {
       remove(ball);
       SCORE = 0;
       LIVES_LEFT = 5;
-    } else if (obj.label == "PAUSE") {
-      ballState();
     }
   } else {
     missedShot = true;
@@ -88,11 +86,17 @@ function shotTarget(e) {
   }
 
   keepScore();
-  if (paused == false) drawBall();
+  drawBall();
+}
+
+function resetGame() {
+  GAME_OVER = false;
+  remove(endGameBox);
+  SCORE = 0;
+  LIVES_LEFT = 5;
 }
 
 function endOfGame(color) {
-  remove(endGameBox);
   endGameBox = new Text("GAME OVER", "50px Impact");
   endGameBox.setColor(color);
   var endGameBox_X = getWidth() / 2 - endGameBox.getWidth() / 2;
@@ -100,7 +104,7 @@ function endOfGame(color) {
   endGameBox.setPosition(endGameBox_X, endGameBox_Y);
   add(endGameBox);
 
-  SCORE = -999;
+  GAME_OVER = true;
 }
 
 function makeGameChallenging() {
@@ -139,12 +143,10 @@ function gameDetails(text1, text2, text3, corner) {
   highScoreBox = new Text(text2, "25px Ariall");
   restartBox = new Text("RESTART", "25px Ariall");
   livesBox = new Text(text3, "25px Ariall");
-  pauseBox = new Text("PAUSE", "25px Ariall");
   var TEXT_HEIGHT = highScoreBox.getHeight();
   var TEXT_WIDTH = highScoreBox.getWidth();
   var RESTART_HEIGHT = restartBox.getHeight();
   var RESTART_WIDTH = restartBox.getWidth();
-  var PAUSE_WIDTH = pauseBox.getWidth();
 
   scoreBox.setPosition(0, TEXT_HEIGHT);
   highScoreBox.setPosition(getWidth() - TEXT_WIDTH, TEXT_HEIGHT);
@@ -153,16 +155,11 @@ function gameDetails(text1, text2, text3, corner) {
     getWidth() - RESTART_WIDTH - 5,
     getHeight() - RESTART_HEIGHT / 2
   );
-  pauseBox.setPosition(
-    (getWidth() - PAUSE_WIDTH) / 2,
-    getHeight() - RESTART_HEIGHT / 2
-  );
 
   add(scoreBox);
   add(highScoreBox);
   add(livesBox);
   add(restartBox);
-  add(pauseBox);
 }
 
 function animateBall() {
@@ -193,7 +190,7 @@ function checkWalls() {
 }
 
 function drawBall() {
-  var ballRadius = (getWidth() / getHeight()) * 25;
+  var ballRadius = getWidth() / 30;
   randColor = Randomizer.nextColor();
   var randX = Randomizer.nextInt(ballRadius, getWidth() - ballRadius);
   var randY = Randomizer.nextInt(ballRadius, getHeight() - ballRadius);
@@ -207,59 +204,35 @@ function drawCircle(radius, color, x, y) {
   add(ball);
 }
 
-function drawAim(e) {
-  drawLineX1(0, e.getY(), e.getX() - 5, e.getY());
-  drawLineX2(e.getX() + 5, e.getY(), getWidth(), e.getY());
-  drawLineY1(e.getX(), 0, e.getX(), e.getY() - 5);
-  drawLineY2(e.getX(), e.getY() + 5, e.getX(), getHeight());
-}
-
-function drawLineX1(x1, y1, x2, y2) {
-  remove(lineX1);
-  lineX1 = new Line(x2 - 10, y1, x2, y2);
+function drawAim() {
+  lineX1 = new Line(400 - 10, 400, 400, 400);
   lineX1.setColor(Color.red);
   add(lineX1);
-}
-
-function drawLineX2(x1, y1, x2, y2) {
-  remove(lineX2);
-  lineX2 = new Line(x1, y1, x1 + 10, y2);
+  lineX2 = new Line(400, 400, 400 + 10, 400);
   lineX2.setColor(Color.red);
   add(lineX2);
-}
-
-function drawLineY1(x1, y1, x2, y2) {
-  remove(lineY1);
-  lineY1 = new Line(x1, y2 - 10, x2, y2);
+  lineY1 = new Line(400, 400 - 10, 400, 400);
   lineY1.setColor(Color.red);
   add(lineY1);
-}
-
-function drawLineY2(x1, y1, x2, y2) {
-  remove(lineY2);
-  lineY2 = new Line(x1, y1, x2, y1 + 10);
+  lineY2 = new Line(400, 400, 400, 400 + 10);
   lineY2.setColor(Color.red);
   add(lineY2);
 }
 
-function ballState() {
-  if (dx == 0 && dy == 0) {
-    paused = false;
-    dx = current_speed_x;
-    dy = current_speed_y;
-    ball.setColor(Randomizer.nextColor());
-  } else {
-    paused = true;
-    dx = 0;
-    dy = 0;
-    ball.setColor(Randomizer.nextColor());
-  }
+function moveAim(e) {
+  lineX1.setPosition(e.getX() - 15, e.getY());
+  lineX1.setEndpoint(e.getX(), e.getY());
+  lineX2.setPosition(e.getX(), e.getY());
+  lineX2.setEndpoint(e.getX() + 15, e.getY());
+  lineY1.setPosition(e.getX(), e.getY() - 15);
+  lineY1.setEndpoint(e.getX(), e.getY());
+  lineY2.setPosition(e.getX(), e.getY());
+  lineY2.setEndpoint(e.getX(), e.getY() + 15);
 }
 
 function changeBackgroundColor() {
-  var background = document.querySelector(".game-box");
+  var commentBox = document.querySelector(".comment");
   backgroundColor = Randomizer.nextColor();
-  if (backgroundColor != randColor) {
-    background.style.backgroundColor = backgroundColor;
-  }
+  commentBox.style.backgroundColor = backgroundColor;
+  commentBox.innerHTML = "New Level! (+0.5 speed)";
 }
